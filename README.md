@@ -70,6 +70,9 @@ tests/         engine tests
 packaging/     PyInstaller recipe
 ```
 
+## Author
+Made by **Teng Maceren** · [tengmaceren.com](https://tengmaceren.com) · [@TengKo](https://github.com/TengKo), built with help from Claude.
+
 ## License
 [MIT](LICENSE) © Teng Maceren
 
