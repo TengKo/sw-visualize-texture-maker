@@ -12,7 +12,10 @@ python -m pytest -q                        # engine tests (fast, no GUI)
 python run.py --self-test <dir>            # engine + builds MainWindow, writes <dir>/self_test.json, exit 0 = OK
 pyinstaller --noconfirm --clean packaging/texture_maker.spec          # one-file exe -> dist/
 set TM_ONEFILE=0 && pyinstaller --noconfirm packaging/texture_maker.spec   # portable folder (PowerShell: $env:TM_ONEFILE="0")
+powershell -ExecutionPolicy Bypass -File packaging/build_installer.ps1     # folder -> dist/...-Setup.exe (needs Inno Setup 6)
+powershell -ExecutionPolicy Bypass -File packaging/test_installer.ps1      # silent install -> --self-test -> uninstall
 ```
+`build.bat` runs the whole chain (venv, tests, folder build, installer). Inno Setup: `winget install JRSoftware.InnoSetup`.
 Headless GUI checks (Linux/CI): `QT_QPA_PLATFORM=offscreen`, then `widget.grab().save(...)` for screenshots.
 
 ## Layout
@@ -27,8 +30,16 @@ Headless GUI checks (Linux/CI): `QT_QPA_PLATFORM=offscreen`, then `widget.grab()
   `workers.py` (`run_async`, `LatestJob` = newest-request-wins background jobs), `icons.py` (inline SVG).
 - `texture_maker/settings.py`: JSON settings + recent items in `%APPDATA%\SW Visualize Texture Maker\`.
 - `packaging/texture_maker.spec`: PyInstaller recipe (drops unused Qt modules to save size).
-- `.github/workflows/build.yml`: Windows CI: tests → build exe + portable zip → run `--self-test` on the exe →
-  upload artifact; tags `v*` publish a GitHub Release.
+- `packaging/installer.iss`: Inno Setup recipe that packs the folder build into `Setup.exe`. `build_installer.ps1`
+  finds Inno Setup and passes the version from `__init__.py`; `test_installer.ps1` is the end-to-end install check.
+- `.github/workflows/build.yml`: Windows CI: tests → build app folder → installer → test-install (install,
+  `--self-test`, uninstall) → portable zip → upload artifact; tags `v*` publish a GitHub Release.
+
+## Installer rules (don't break)
+- `AppId` in `installer.iss` never changes: Windows uses it to upgrade in place instead of installing twice.
+- Installs per-user by default (`PrivilegesRequired=lowest`, no admin prompt) with an "all users" option.
+- `[InstallDelete]` clears `{app}\_internal` before copying, so upgrades never mix old and new libraries.
+- Settings in `%APPDATA%` are left alone on uninstall and upgrade.
 
 ## .svap rules (verified working in Visualize; don't break)
 - ZIP in OPC layout: `Material.xml`, `Assets/<imageGuid>.dds`, `Thumb.png` + `Thumbnails/<matGuid>.thb.png`
@@ -65,4 +76,5 @@ Batch mode (drop several photos) · interactive 3D preview (rotate + light) · c
 
 ## Releasing
 Bump `__version__` in `texture_maker/__init__.py` and `pyproject.toml`, commit, then `git tag vX.Y.Z && git push --tags`.
-CI builds and attaches `SW-Visualize-Texture-Maker.exe` and `SW-Visualize-Texture-Maker-portable.zip` to the release.
+CI builds and attaches `SW-Visualize-Texture-Maker-Setup.exe` and `SW-Visualize-Texture-Maker-portable.zip` to the
+release. The installer reads its version from `__init__.py`, so bump it before tagging.

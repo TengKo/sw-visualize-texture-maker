@@ -10,10 +10,10 @@ A free, open-source Windows desktop app.
 
 Get the latest version from the **[Releases page](https://github.com/TengKo/sw-visualize-texture-maker/releases/latest)**:
 
-- **`SW-Visualize-Texture-Maker.exe`**: a single file. Just run it.
-- **`SW-Visualize-Texture-Maker-portable.zip`**: the same app as a folder. Unzip it and run the `.exe` inside. It starts faster.
+- **`SW-Visualize-Texture-Maker-Setup.exe`** (recommended): a normal installer. It adds a Start menu shortcut (and a desktop one if you want), and you can uninstall it from **Settings → Apps**. It installs just for you by default, so no admin rights are needed. To update, run the newer Setup: it replaces the old version and keeps your settings.
+- **`SW-Visualize-Texture-Maker-portable.zip`**: no installation. Unzip it anywhere and run the `.exe` inside.
 
-No installation and no Python needed. Windows 10 or 11, 64-bit.
+No Python needed. Windows 10 or 11, 64-bit.
 
 > **First launch:** the app isn't code-signed, so Windows SmartScreen may say *"Windows protected your PC"*. Click **More info → Run anyway**. That happens once.
 
@@ -59,7 +59,7 @@ python -m pytest -q                 # tests
 pyinstaller --noconfirm --clean packaging/texture_maker.spec   # -> dist/SW-Visualize-Texture-Maker.exe
 ```
 
-On Windows, `build.bat` does all of that in a virtual environment. Every push to `main` is built and self-tested on a Windows machine by GitHub Actions ([workflow](.github/workflows/build.yml)), and tagged versions (`v*`) are published as releases.
+On Windows, `build.bat` does all of that in a virtual environment and also builds the installer, `dist/SW-Visualize-Texture-Maker-Setup.exe`. That needs [Inno Setup](https://jrsoftware.org/isinfo.php) (free): `winget install JRSoftware.InnoSetup`. Every push to `main` is built on a Windows machine by GitHub Actions ([workflow](.github/workflows/build.yml)), and the installer is test-installed, self-tested and uninstalled there. Tagged versions (`v*`) are published as releases.
 
 ```
 texture_maker/
@@ -67,7 +67,7 @@ texture_maker/
   ui/          PySide6 desktop UI (pages, widgets, theme, background workers)
   app.py       entry point (+ --self-test used by CI)
 tests/         engine tests
-packaging/     PyInstaller recipe
+packaging/     PyInstaller recipe, Inno Setup installer + build/test scripts
 ```
 
 ## Author

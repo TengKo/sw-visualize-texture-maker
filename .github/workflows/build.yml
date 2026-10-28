@@ -29,21 +29,25 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
-      - name: Build one-file .exe
-        run: pyinstaller --noconfirm --clean --workpath build/onefile packaging/texture_maker.spec
-
-      - name: Build portable folder
+      - name: Build app folder
         env:
           TM_ONEFILE: "0"
-        run: pyinstaller --noconfirm --clean --workpath build/folder packaging/texture_maker.spec
+        run: pyinstaller --noconfirm --clean packaging/texture_maker.spec
 
-      - name: Self-test the built .exe
+      - name: Install Inno Setup
         shell: pwsh
         run: |
-          $out = Join-Path $env:RUNNER_TEMP "selftest"
-          $p = Start-Process -FilePath "dist\SW-Visualize-Texture-Maker.exe" -ArgumentList "--self-test", $out -Wait -PassThru
-          Get-Content (Join-Path $out "self_test.json")
-          if ($p.ExitCode -ne 0) { throw "Self-test failed (exit code $($p.ExitCode))" }
+          if (-not (Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*\ISCC.exe" -ErrorAction SilentlyContinue)) {
+            choco install innosetup --no-progress -y
+          }
+
+      - name: Build installer
+        shell: pwsh
+        run: ./packaging/build_installer.ps1
+
+      - name: Test installer (install, self-test, uninstall)
+        shell: pwsh
+        run: ./packaging/test_installer.ps1 -OutDir (Join-Path $env:RUNNER_TEMP "installer-test")
 
       - name: Zip portable folder
         shell: pwsh
@@ -53,7 +57,7 @@ jobs:
         with:
           name: SW-Visualize-Texture-Maker-windows
           path: |
-            dist/SW-Visualize-Texture-Maker.exe
+            dist/SW-Visualize-Texture-Maker-Setup.exe
             dist/SW-Visualize-Texture-Maker-portable.zip
           if-no-files-found: error
 
@@ -62,6 +66,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/SW-Visualize-Texture-Maker.exe
+            dist/SW-Visualize-Texture-Maker-Setup.exe
             dist/SW-Visualize-Texture-Maker-portable.zip
           generate_release_notes: true
